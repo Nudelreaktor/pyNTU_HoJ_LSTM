@@ -1,0 +1,1 @@
+python lstm.py -c 61 -s 84 -ls 200,200 -dop D:\Projects\full_sets\3d_points_local_full.bin_data -e 50 -tl P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038 -b 1

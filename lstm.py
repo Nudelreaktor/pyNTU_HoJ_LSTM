@@ -41,7 +41,7 @@ def lstm_init(save = False):
 
 
 	# Parse the command line options.
-	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy = parseOpts( sys.argv )
+	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy, number_of_subframes, batch_size, proportion = parseOpts( sys.argv )
 
 	filename_base = timestamp + "_" + "lstm" + "_c" + str(classes) + "_e" + str(epochs) + "_" + "-".join(str(x) for x in layer_sizes)
 
@@ -81,12 +81,22 @@ def lstm_init(save = False):
 	model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
 	model.summary()
+	
+	
+	# read dataset
+	if(os.path.isfile(dataset_pickle_path)):
+		dataset, dataset_size = dr.load_data(byte_object=True, data_object_path=dataset_pickle_path, classes=classes, number_of_entries=hoj_height)
+	else:
+		dataset, dataset_size = dr.load_data(byte_object=False, data_path=training_directory, number_of_entries=hoj_height)
 
-	model, histories = lstm_train(model, classes, epochs=epochs, training_directory=training_path, training_list=training_list, dataset_pickle_file=dataset_pickle_path, _sample_strategy=sample_strategy, number_of_entries=hoj_height)
+	training_dataset, _ , validation_dataset, _ = dr.devide_dataset(_data=dataset, _training_list=training_list, _proportion=proportion)
+	
+
+	model, histories = lstm_train(model, training_dataset, epochs=epochs, number_of_subframes=number_of_subframes, _sample_strategy=sample_strategy, batch_size=batch_size)
 	
 	
 	#	evaluation_path = training_path
-	score, acc, cnf_matrix = lstm_validate(model, classes, evaluation_directory=training_path, training_list=training_list, dataset_pickle_file=dataset_pickle_path, create_confusion_matrix=True, number_of_entries=hoj_height)
+	score, acc, cnf_matrix = lstm_validate(model, validation_dataset, create_confusion_matrix=True,number_of_subframes=number_of_subframes, _sample_strategy=sample_strategy, batch_size=batch_size)
 
 	end_time = time.time()
 
@@ -165,25 +175,11 @@ def lstm_load(filename = None):
 		return load_model(f)
 
 #use this funktion to train the neural network
-def lstm_train(lstm_model, classes, epochs=10, training_directory="lstm_train/", training_list=None, dataset_pickle_file="", _sample_strategy="random", number_of_entries=168):
+def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _sample_strategy="random", batch_size=32):
 	
 	print("train neural network...")
-	directories = os.listdir(training_directory)
-	directories_len = len(directories)
-
-	complete_hoj_data = None
 	histories = []
-
-
-
-	# read dataset
-	if(os.path.isfile(dataset_pickle_file)):
-		dataset, dataset_size = dr.load_data(byte_object=True, data_object_path=dataset_pickle_file, classes=classes, number_of_entries=number_of_entries)
-	else:
-		dataset, dataset_size = dr.load_data(byte_object=False, data_path=training_directory, number_of_entries=number_of_entries)
-
-	training_dataset = dr.devide_dataset(_data=dataset, _training_list=training_list)[0]
-
+	
 	# Trainingsepochen
 	for x in range(0,epochs):
 		print("Epoch", x+1, "/", epochs)
@@ -193,21 +189,22 @@ def lstm_train(lstm_model, classes, epochs=10, training_directory="lstm_train/",
 		idx = 0
 
 		for _obj in training_dataset:
-			training_data.append(get_eight_buckets(_obj.get_hoj_set()))
+			if number_of_subframes > 0:
+				training_data.append(get_buckets(_obj.get_hoj_set(), number_of_subframes, _sample_strategy))
+			else:
+				training_data.append(_obj.get_hoj_set())
 			training_labels.append(_obj.get_hoj_label()[0])
 
 		# train neural network
-		training_history = lstm_model.fit(np.array(training_data), np.array(training_labels), epochs=1, batch_size=32, verbose=1) # epochen 1, weil außerhald abgehandelt; batch_size 1, weil data_sets unterschiedliche anzahl an Frames
+		training_history = lstm_model.fit(np.array(training_data), np.array(training_labels), epochs=1, batch_size=batch_size, verbose=1) # epochen 1, weil außerhald abgehandelt
 		histories.append(training_history.history)
 			
 	return lstm_model, histories
 
-#use this funktion to train the neural network
-def lstm_validate(lstm_model, classes, evaluation_directory="lstm_train/", training_list=None, dataset_pickle_file="", create_confusion_matrix=False, _sample_strategy="random", number_of_entries=168):
+#use this funktion to validate the neural network
+def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False, number_of_subframes=8, _sample_strategy="random", batch_size=32):
 	
 	print("evaluate neural network...")
-	directories = os.listdir(evaluation_directory)
-	directories_len = len(directories)
 	validation_data = []
 	validation_labels = []
 	
@@ -215,32 +212,22 @@ def lstm_validate(lstm_model, classes, evaluation_directory="lstm_train/", train
 	n = 0
 	idx = 0
 
-	# read dataset and labels
 	
-	if(os.path.isfile(dataset_pickle_file)):
-
-		dataset, dataset_size = dr.load_data(byte_object=True, data_object_path=dataset_pickle_file, classes=classes, number_of_entries=number_of_entries)
-
-	else:
-		dataset, dataset_size = dr.load_data(byte_object=False, data_path=evaluation_directory, number_of_entries=number_of_entries)
-
-	if training_list is not None:
-		evaluation_dataset = dr.devide_dataset(_data=dataset, _training_list=training_list)[2]
-	else:
-		evaluation_dataset = dataset
-
 	for _obj in evaluation_dataset:
-		validation_data.append(get_eight_buckets(_obj.get_hoj_set()))
+		if number_of_subframes > 0:
+			validation_data.append(get_buckets(_obj.get_hoj_set(), number_of_subframes, _sample_strategy))
+		else:
+			validation_data.append(_obj.get_hoj_set())
 		validation_labels.append(_obj.get_hoj_label()[0])
 
 
 	# evaluate neural network
-	score, acc = lstm_model.evaluate(np.array(validation_data), np.array(validation_labels), batch_size=32, verbose=0) # batch_size willkuerlich
+	score, acc = lstm_model.evaluate(np.array(validation_data), np.array(validation_labels), batch_size=batch_size, verbose=0)
 			
 	print("Accuracy:",acc)
 
 	if create_confusion_matrix is True:
-		predictions = lstm_model.predict(np.array(validation_data),batch_size = 32)
+		predictions = lstm_model.predict(np.array(validation_data),batch_size = batch_size)
 		
 		predicted_labels = []
 		real_labels = []
@@ -261,28 +248,6 @@ def lstm_validate(lstm_model, classes, evaluation_directory="lstm_train/", train
 
 
 	return score, acc, None
-
-
-def get_hoj_data(directory, classes):
-	hoj_set_files = os.listdir(directory)
-	data = []
-	hoj_set = []
-	label = np.zeros(classes)
-	# alle dateien laden, in einer Matrix peichern
-	for hoj_file in hoj_set_files:
-		file = open(directory + "/" + hoj_file,'rb')
-		hoj_array = np.load(file)
-		file.close()
-
-		hoj_set.append(hoj_array)
-
-	# lade Labels (test output)
-	idx = int(directory[-3:])
-	label[idx - 1] = 1
-
-	selected_hoj_set = get_eight_buckets(hoj_set)
-
-	return np.array(selected_hoj_set), label
 
 
 		
@@ -324,11 +289,10 @@ def to_evaluate( training_list, _skeleton_filename_ ):
 	return True
 
 
-def get_eight_buckets( hoj_set, _sample_strategy="random" ):
+def get_buckets( hoj_set, _number_of_subframes, _sample_strategy="random" ):
 
 	# Get some informations about the data
 	number_of_frames = len(hoj_set)
-	_number_of_subframes = 8
 	frame = []
 
 	# Compute the size of the 8 buckets depending of the number of frames of the set.
@@ -379,14 +343,17 @@ def parseOpts( argv ):
 	# dataset parameters
 	parser.add_argument("-dop", "--data_object_path", action='store', dest="data_object_path", help="The path to the data_object. (required or -tp)")
 	parser.add_argument("-tp", "--training_path", action='store', dest="training_path", help="The path of the training directory. (required or -dp)")
-	parser.add_argument("-tl", "--training_list", action='store', dest='training_list', help="A list of training feature in the form: -tl S001,S002,S003,...")
+	parser.add_argument("-tl", "--training_list", action='store', dest='training_list', help="A list of training feature in the form: -tl S001,S002,S003,... (overrites -pp)")
+	parser.add_argument("-pp", "--proportion", action='store', dest='proportion', help="The Proportion of the Datasets training data to validation data in the form -p 80/20")
 
 	# classifier parameters
 	parser.add_argument("-s", "--input_size", action='store', dest="lstm_size", help="The number of input fields. (required)")
 	parser.add_argument("-c", "--classes", action='store', dest="lstm_classes", help="The number of output classes. (required)")
 	parser.add_argument("-e", "--epochs", action='store', dest="lstm_epochs", help="The number of training epochs. (required)")
 	parser.add_argument("-ls", "--layer_sizes", action='store', dest='layer_sizes', help="A list of sizes of the LSTM layers (standart: -ls 16,16)")
+	parser.add_argument("-sf", "--number_of_subframes", action='store', dest="number_of_subframes", help="The number of subframes in one bucket. No subsampling when <= 0")
 	parser.add_argument("-bs", "--bucket_strategy", action='store', dest='bucket_strategy', help="Defines the strategy of the set subsampling. [first | mid | last | random]")
+	parser.add_argument("-b", "--batch_size", action='store', dest='batch_size', help="The batch size to train the LSTM with.")
 
 	# general control parameters
 	parser.add_argument("-p", "--path", action='store', dest="lstm_path", help="The PATH where the lstm-model will be saved.")
@@ -426,6 +393,11 @@ def parseOpts( argv ):
 		training_list = args.training_list.split(",")
 	else:
 		training_list = None
+		
+	if args.proportion and training_list is None:
+		proportion = args.proportion
+	else:
+		proportion = None
 
 	if args.layer_sizes:
 		layer_sizes = args.layer_sizes.split(",")
@@ -436,6 +408,16 @@ def parseOpts( argv ):
 		data_object_path = args.data_object_path
 	else:
 		data_object_path = ""
+		
+	if args.number_of_subframes:
+		number_of_subframes = int(args.number_of_subframes)
+	else:
+		number_of_subframes = 0
+	
+	if args.batch_size:
+		batch_size = int(args.batch_size)
+	else:
+		batch_size = 1
 
 	print ("\nConfiguration:")
 	print ("-----------------------------------------------------------------")
@@ -448,7 +430,7 @@ def parseOpts( argv ):
 	else:
 		print("Network will be saved")
 
-	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy
+	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy, number_of_subframes, batch_size, proportion
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 

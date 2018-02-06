@@ -41,7 +41,7 @@ def lstm_init(save = False):
 
 
 	# Parse the command line options.
-	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy, number_of_subframes, batch_size, proportion = parseOpts( sys.argv )
+	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy, number_of_subframes, batch_size, proportion, activation = parseOpts( sys.argv )
 
 	filename_base = timestamp + "_" + "lstm" + "_c" + str(classes) + "_e" + str(epochs) + "_" + "-".join(str(x) for x in layer_sizes)
 
@@ -59,12 +59,12 @@ def lstm_init(save = False):
 	else:
 		for i in range(len(layer_sizes)):
 			if i == 0:
-				model.add(LSTM(int(layer_sizes[i]), input_shape=(None,hoj_height), return_sequences=True))
+				model.add(LSTM(int(layer_sizes[i]), input_shape=(None,hoj_height), return_sequences=True, activation=activation))
 			else:
 				if i == len(layer_sizes) - 1:
-					model.add(LSTM(int(layer_sizes[i])))
+					model.add(LSTM(int(layer_sizes[i]), activation=activation))
 				else:
-					model.add(LSTM(int(layer_sizes[i]), return_sequences=True))
+					model.add(LSTM(int(layer_sizes[i]), return_sequences=True, activation=activation))
 
 
 	# voll vernetzte Schicht zum Herunterbrechen vorheriger Ausgabedaten auf die Menge der Klassen 
@@ -354,6 +354,7 @@ def parseOpts( argv ):
 	parser.add_argument("-sf", "--number_of_subframes", action='store', dest="number_of_subframes", help="The number of subframes in one bucket. No subsampling when <= 0")
 	parser.add_argument("-bs", "--bucket_strategy", action='store', dest='bucket_strategy', help="Defines the strategy of the set subsampling. [first | mid | last | random]")
 	parser.add_argument("-b", "--batch_size", action='store', dest='batch_size', help="The batch size to train the LSTM with.")
+	parser.add_argument("-a", "--activation", action='store', dest='activation', help="The Activation function of the LSTM neurons. (default tanh)")
 
 	# general control parameters
 	parser.add_argument("-p", "--path", action='store', dest="lstm_path", help="The PATH where the lstm-model will be saved.")
@@ -418,6 +419,11 @@ def parseOpts( argv ):
 		batch_size = int(args.batch_size)
 	else:
 		batch_size = 1
+		
+	if args.activation:
+		activation = args.activation
+	else:
+		activation = 'tanh'
 
 	print ("\nConfiguration:")
 	print ("-----------------------------------------------------------------")
@@ -430,7 +436,7 @@ def parseOpts( argv ):
 	else:
 		print("Network will be saved")
 
-	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy, number_of_subframes, batch_size, proportion
+	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy, number_of_subframes, batch_size, proportion, activation
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 

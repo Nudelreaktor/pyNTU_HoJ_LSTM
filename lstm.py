@@ -41,7 +41,7 @@ def lstm_init(save = False):
 
 
 	# Parse the command line options.
-	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy, number_of_subframes, batch_size, proportion, activation = parseOpts( sys.argv )
+	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy, number_of_subframes, batch_size, proportion, activation, recurrent_activation = parseOpts( sys.argv )
 
 	filename_base = timestamp + "_" + "lstm" + "_c" + str(classes) + "_e" + str(epochs) + "_" + "-".join(str(x) for x in layer_sizes)
 
@@ -59,12 +59,12 @@ def lstm_init(save = False):
 	else:
 		for i in range(len(layer_sizes)):
 			if i == 0:
-				model.add(LSTM(int(layer_sizes[i]), input_shape=(None,hoj_height), return_sequences=True, activation=activation))
+				model.add(LSTM(int(layer_sizes[i]), input_shape=(None,hoj_height), return_sequences=True, activation=activation, recurrent_activation=recurrent_activation))
 			else:
 				if i == len(layer_sizes) - 1:
-					model.add(LSTM(int(layer_sizes[i]), activation=activation))
+					model.add(LSTM(int(layer_sizes[i]), activation=activation, recurrent_activation=recurrent_activation))
 				else:
-					model.add(LSTM(int(layer_sizes[i]), return_sequences=True, activation=activation))
+					model.add(LSTM(int(layer_sizes[i]), return_sequences=True, activation=activation, recurrent_activation=recurrent_activation))
 
 
 	# voll vernetzte Schicht zum Herunterbrechen vorheriger Ausgabedaten auf die Menge der Klassen 
@@ -87,9 +87,11 @@ def lstm_init(save = False):
 	if(os.path.isfile(dataset_pickle_path)):
 		dataset, dataset_size = dr.load_data(byte_object=True, data_object_path=dataset_pickle_path, classes=classes, number_of_entries=hoj_height)
 	else:
-		dataset, dataset_size = dr.load_data(byte_object=False, data_path=training_directory, number_of_entries=hoj_height)
+		dataset, dataset_size = dr.load_data(byte_object=False, data_path=dataset_pickle_path, number_of_entries=hoj_height)
 
 	training_dataset, _ , validation_dataset, _ = dr.devide_dataset(_data=dataset, _training_list=training_list, _proportion=proportion)
+	
+	print(np.array(training_dataset).shape)
 	
 
 	model, histories = lstm_train(model, training_dataset, epochs=epochs, number_of_subframes=number_of_subframes, _sample_strategy=sample_strategy, batch_size=batch_size)
@@ -355,6 +357,7 @@ def parseOpts( argv ):
 	parser.add_argument("-bs", "--bucket_strategy", action='store', dest='bucket_strategy', help="Defines the strategy of the set subsampling. [first | mid | last | random]")
 	parser.add_argument("-b", "--batch_size", action='store', dest='batch_size', help="The batch size to train the LSTM with.")
 	parser.add_argument("-a", "--activation", action='store', dest='activation', help="The Activation function of the LSTM neurons. (default tanh)")
+	parser.add_argument("-ra", "--recurrent_activation", action='store', dest='recurrent_activation', help="the recurrent update function of the internal memory state. (default tanh)")
 
 	# general control parameters
 	parser.add_argument("-p", "--path", action='store', dest="lstm_path", help="The PATH where the lstm-model will be saved.")
@@ -424,6 +427,11 @@ def parseOpts( argv ):
 		activation = args.activation
 	else:
 		activation = 'tanh'
+		
+	if args.recurrent_activation:
+		recurrent_activation = args.recurrent_activation
+	else:
+		recurrent_activation = 'tanh'
 
 	print ("\nConfiguration:")
 	print ("-----------------------------------------------------------------")
@@ -436,7 +444,7 @@ def parseOpts( argv ):
 	else:
 		print("Network will be saved")
 
-	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy, number_of_subframes, batch_size, proportion, activation
+	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy, number_of_subframes, batch_size, proportion, activation, recurrent_activation
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 

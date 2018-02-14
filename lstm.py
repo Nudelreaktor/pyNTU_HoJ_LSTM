@@ -105,7 +105,12 @@ def lstm_init(save = False):
 	timeDiff = datetime.timedelta(seconds=end_time - start_time)
 
 	# print statistics
-	if not os.path.exists("clf_statistics/"):
+	
+	if lstm_path is not None:
+		filename = lstm_path + ".clfStats"
+		if not os.path.exists(os.path.dirname(filename)):
+			os.makedirs(os.path.dirname(filename))
+	else if not os.path.exists("clf_statistics/"):
 		os.makedirs("clf_statistics/")
 	filename = "clf_statistics/" + filename_base + ".clfStats"
 
@@ -134,7 +139,14 @@ def lstm_init(save = False):
 	#
 	###############################################################
 
-	file = open("clf_statistics/" + filename_base + "_confusion_matrix.conf_matrix", "wt")
+	
+	if lstm_path is not None:
+		filename = lstm_path + "_confusion_matrix.conf_matrix"
+		if not os.path.exists(os.path.dirname(filename)):
+			os.makedirs(os.path.dirname(filename))
+		file = open(filename, "wt")
+	else:
+		file = open("clf_statistics/" + filename_base + "_confusion_matrix.conf_matrix", "wt")
 	writer = csv.writer(file)
 	writer.writerows(cnf_matrix)
 	# bonus create Bitmap image of confusion matrix
@@ -360,7 +372,7 @@ def parseOpts( argv ):
 	parser.add_argument("-ra", "--recurrent_activation", action='store', dest='recurrent_activation', help="the recurrent update function of the internal memory state. (default tanh)")
 
 	# general control parameters
-	parser.add_argument("-p", "--path", action='store', dest="lstm_path", help="The PATH where the lstm-model will be saved.")
+	parser.add_argument("-p", "--path", action='store', dest="lstm_path", help="The PATH with filename where the lstm-model and statistics will be saved.")
 	parser.add_argument("-t", "--test", action='store_true', dest='test_network', help="if set the created neural network won't be saved. (overrites -p)")
 
 	

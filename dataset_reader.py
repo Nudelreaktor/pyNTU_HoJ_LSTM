@@ -7,6 +7,7 @@ import argparse
 import math 
 import random
 import copy
+import platform
 
 import pickle
 import numpy as np

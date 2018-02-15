@@ -89,10 +89,7 @@ def lstm_init(save = False):
 	else:
 		dataset, dataset_size = dr.load_data(byte_object=False, data_path=dataset_pickle_path, number_of_entries=hoj_height)
 
-	training_dataset, _ , validation_dataset, _ = dr.devide_dataset(_data=dataset, _training_list=training_list, _proportion=proportion)
-	
-	print(np.array(training_dataset).shape)
-	
+	training_dataset, _ , validation_dataset, _ = dr.devide_dataset(_data=dataset, _number_of_directories=dataset_size, _training_list=training_list, _proportion=proportion)
 
 	model, histories = lstm_train(model, training_dataset, epochs=epochs, number_of_subframes=number_of_subframes, _sample_strategy=sample_strategy, batch_size=batch_size)
 	
@@ -110,8 +107,9 @@ def lstm_init(save = False):
 		filename = lstm_path + ".clfStats"
 		if not os.path.exists(os.path.dirname(filename)):
 			os.makedirs(os.path.dirname(filename))
-	else if not os.path.exists("clf_statistics/"):
-		os.makedirs("clf_statistics/")
+	else:
+		if not os.path.exists("clf_statistics/"):
+			os.makedirs("clf_statistics/")
 	filename = "clf_statistics/" + filename_base + ".clfStats"
 
 	f = open(filename, "wt")	
@@ -216,7 +214,7 @@ def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _
 	return lstm_model, histories
 
 #use this funktion to validate the neural network
-def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False, number_of_subframes=8, _sample_strategy="random", batch_size=32):
+def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False, number_of_subframes=0, _sample_strategy="random", batch_size=32):
 	
 	print("evaluate neural network...")
 	validation_data = []

@@ -26,8 +26,9 @@ from keras.preprocessing import sequence
 from sklearn.metrics import confusion_matrix
 
 # file dialog
-import tkinter as tk
-from tkinter import filedialog
+# TODO Rebuild tKinter stuff with something else simple
+# import tkinter as tk
+# from tkinter import filedialog
 
 # local
 import dataset_reader as dr
@@ -36,7 +37,8 @@ import single_hoj_set as sh_set
 
 timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
 
-
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# LSTM's main routine.
 def lstm_init(save = False):
 
 
@@ -103,16 +105,22 @@ def lstm_init(save = False):
 
 	# print statistics
 	
+	# Create base filename 
+	statistics_base_filename = ""
 	if lstm_path is not None:
-		filename = lstm_path + ".clfStats"
-		if not os.path.exists(os.path.dirname(filename)):
-			os.makedirs(os.path.dirname(filename))
+		statistics_base_filename = lstm_path
+	else:
+		statistics_base_filename = filename_base
+
+	clfStats_filename = "clf_statistics/" + statistics_base_filename + ".clfStats"
+	# If clf_statistics/ exist but there is no file 
+	if not os.path.exists(os.path.dirname(clfStats_filename)):
+		os.makedirs(os.path.dirname(clfStats_filename))
 	else:
 		if not os.path.exists("clf_statistics/"):
 			os.makedirs("clf_statistics/")
-	filename = "clf_statistics/" + filename_base + ".clfStats"
 
-	f = open(filename, "wt")	
+	f = open(clfStats_filename, "wt")	
 	f.write("Network was created and trained in : "+str(timeDiff)+" s\n" )
 	f.write("------------------------------------------------------------------\n")
 	for x in range(0,len(histories)):
@@ -137,16 +145,14 @@ def lstm_init(save = False):
 	#
 	###############################################################
 
-	
-	if lstm_path is not None:
-		filename = lstm_path + "_confusion_matrix.conf_matrix"
-		if not os.path.exists(os.path.dirname(filename)):
-			os.makedirs(os.path.dirname(filename))
-		file = open(filename, "wt")
-	else:
-		file = open("clf_statistics/" + filename_base + "_confusion_matrix.conf_matrix", "wt")
+	cnfMatrix_filename = "clf_statistics/" + statistics_base_filename + "cnfMatrix.conf_Matrix"
+	# If file not exist, create.
+	if not os.path.exists(os.path.dirname(cnfMatrix_filename)):
+		os.makedirs(os.path.dirname(cnfMatrix_filename))
+	file = open(cnfMatrix_filename, "wt")
 	writer = csv.writer(file)
 	writer.writerows(cnf_matrix)
+
 	# bonus create Bitmap image of confusion matrix
 	img = Image.new('RGB',(len(cnf_matrix) * 10,len(cnf_matrix) * 10),"black")
 	pixels = img.load()
@@ -158,35 +164,71 @@ def lstm_init(save = False):
 			else:
 				pixels[i,j] = (int(cnf_matrix[int(j/10),int(i/10)] * 255),0,0)
 
+	cnfBMP_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.bmp"
+	img.save(cnfBMP_filename)
 
-	img.save("clf_statistics/" + filename_base + "_confusion_matrix.bmp")
-	
+	# bonus bonus create .png image with matplotlib 
+	cnfPNG_filename = statistics_base_filename + "_cnfMatrix.png"
+	if not os.path.exists(os.path.dirname(cnfPNG_filename)):
+		os.makedirs(os.path.dirname(cnfPNG_filename))
+	store_conf_matrix_as_png( cnf_matrix, cnfPNG_filename )
 	
 	# save neural network
 	if save is True:
+
+		if not os.path.exists("classifiers/"):
+			os.makedirs("classifiers/")
+
 		if lstm_path is not None:
-			model.save(lstm_path)
+			filename = "classifiers/"+lstm_path+".h5"
+			if not os.path.exists(os.path.dirname(filename)):
+				os.makedirs(os.path.dirname(filename))
+			model.save(filename)
 		else:
-			if not os.path.exists("classifiers/"):
-				os.makedirs("classifiers/")
 			filename = "classifiers/" + filename_base + ".h5"
+			if not os.path.exists(os.path.dirname(filename)):
+				os.makedirs(os.path.dirname(filename))
 			model.save(filename)
 
 	return model
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Store the confusion matrix as .png
+
+def store_conf_matrix_as_png( cnf_matrix, _classifier_name ):
+
+	import plot_confusion_matrix as p_CM 
+
+	path = "clf_statistics/"
+
+	if( os.path.exists(path) is False ):
+		os.makedirs(path)
+
+	# Remove the file extention set by the classifier evaluation.
+	print("SCMP :: CLF_Name_ ", _classifier_name )
+	_name_only = _classifier_name.split(".")[0]
+	_final_path = path+_name_only+"_conf_matrix.png"
+
+	cm_labels = np.arange(len(cnf_matrix[0]))
+	p_CM.plot_confusion_matrix( cnf_matrix, cm_labels, _final_path , True)
 	
-	
-# use this funktion to load a trained neural network
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Load a previously trained neural network.
+
 def lstm_load(filename = None):
 	if filename is not None:
 		return load_model(filename)
 
-	f = filedialog.askopenfilename(filetypes=(("Model files","*.h5"),("all files","*.*")))
-	if f is None or f is "":
-		return None
-	else:
-		return load_model(f)
+# TODO Rebuild tKinter stuff with something else simple
+	# f = filedialog.askopenfilename(filetypes=(("Model files","*.h5"),("all files","*.*")))
+	# if f is None or f is "":
+	# 	return None
+	# else:
+	# 	return load_model(f)
 
-#use this funktion to train the neural network
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Train the neural network.
+
 def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _sample_strategy="random", batch_size=32):
 	
 	print("train neural network...")
@@ -213,7 +255,9 @@ def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _
 			
 	return lstm_model, histories
 
-#use this funktion to validate the neural network
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Validate the neural network
+
 def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False, number_of_subframes=0, _sample_strategy="random", batch_size=32):
 	
 	print("evaluate neural network...")
@@ -261,17 +305,17 @@ def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False,
 
 	return score, acc, None
 
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Evaluate data with the neural network.
 
-		
-# use this funktion to evaluate data in the neural network
 def lstm_predict(lstm_model, hoj3d_set):
 	prediction = lstm_model.predict(hoj3d_set,batch_size = 1)
 	idx = np.argmax(prediction)[0]
 	return idx,prediction[0][0][idx],prediction
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Skip actions during training which are not in the training_list
 
-# A small function to skip actions which are not in the training_list
 def to_train( training_list, _skeleton_filename_ ):
 	# If an training_list is given 
 	if( training_list is not None ):
@@ -287,8 +331,8 @@ def to_train( training_list, _skeleton_filename_ ):
 	return False
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Skip actions during evaluation which are in the training_list
 
-# A small function to skip actions which are in the training_list
 def to_evaluate( training_list, _skeleton_filename_ ):
 	# If an training_list is given 
 	if( training_list is not None ):
@@ -300,6 +344,8 @@ def to_evaluate( training_list, _skeleton_filename_ ):
 	# If the action of the skeleton file is not in the training_list.
 	return True
 
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Subsample the training data if necessary.
 
 def get_buckets( hoj_set, _number_of_subframes, _sample_strategy="random" ):
 
@@ -340,12 +386,10 @@ def get_buckets( hoj_set, _number_of_subframes, _sample_strategy="random" ):
 			frame.append(hoj_set[random_frame_number]);
 
 	return frame
-
-
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Parse command line arguments
 
-# Parse the command line arguments
 def parseOpts( argv ):
 
 	# generate parser object

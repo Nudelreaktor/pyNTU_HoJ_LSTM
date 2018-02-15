@@ -35,7 +35,6 @@ import dataset_reader as dr
 import single_hoj_set as sh_set
 import plot_confusion_matrix as p_CM 
 
-
 timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -146,6 +145,11 @@ def lstm_init(save = False):
 	# horrizontal predicted label
 	#
 	###############################################################
+
+	# TODO TESTING Dirty Workaround for 60 vs 61 class problem
+	# Remove nan line in cnf_matrix
+	cnf_matrix[~np.isnan(cnf_matrix).any(axis=1)]
+	# TODO TESTING 
 
 	cnfMatrix_filename = "clf_statistics/" + statistics_base_filename + ".cnfMatrix"
 	# If file not exist, create.

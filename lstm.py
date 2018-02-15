@@ -33,6 +33,7 @@ from sklearn.metrics import confusion_matrix
 # local
 import dataset_reader as dr
 import single_hoj_set as sh_set
+import plot_confusion_matrix as p_CM 
 
 
 timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
@@ -112,13 +113,14 @@ def lstm_init(save = False):
 	else:
 		statistics_base_filename = filename_base
 
+	# Check if clf_statistics is existing
+	if not os.path.exists("clf_statistics/"):
+		os.makedirs("clf_statistics/")
+
 	clfStats_filename = "clf_statistics/" + statistics_base_filename + ".clfStats"
 	# If clf_statistics/ exist but there is no file 
 	if not os.path.exists(os.path.dirname(clfStats_filename)):
 		os.makedirs(os.path.dirname(clfStats_filename))
-	else:
-		if not os.path.exists("clf_statistics/"):
-			os.makedirs("clf_statistics/")
 
 	f = open(clfStats_filename, "wt")	
 	f.write("Network was created and trained in : "+str(timeDiff)+" s\n" )
@@ -168,7 +170,8 @@ def lstm_init(save = False):
 	img.save(cnfBMP_filename)
 
 	# bonus bonus create .png image with matplotlib 
-	cnfPNG_filename = statistics_base_filename + "_cnfMatrix.png"
+	cnfPNG_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.png"
+	print (" HELLO ", cnfPNG_filename)
 	if not os.path.exists(os.path.dirname(cnfPNG_filename)):
 		os.makedirs(os.path.dirname(cnfPNG_filename))
 	store_conf_matrix_as_png( cnf_matrix, cnfPNG_filename )
@@ -199,18 +202,9 @@ def store_conf_matrix_as_png( cnf_matrix, _classifier_name ):
 
 	import plot_confusion_matrix as p_CM 
 
-	path = "clf_statistics/"
-
-	if( os.path.exists(path) is False ):
-		os.makedirs(path)
-
-	# Remove the file extention set by the classifier evaluation.
 	print("SCMP :: CLF_Name_ ", _classifier_name )
-	_name_only = _classifier_name.split(".")[0]
-	_final_path = path+_name_only+"_conf_matrix.png"
-
 	cm_labels = np.arange(len(cnf_matrix[0]))
-	p_CM.plot_confusion_matrix( cnf_matrix, cm_labels, _final_path , True)
+	p_CM.plot_confusion_matrix( cnf_matrix, cm_labels, _classifier_name , True, show=False )
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Load a previously trained neural network.

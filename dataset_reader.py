@@ -152,7 +152,7 @@ def load_pickles( _path, _object="data" ):
 	if _object is "data":
 		with open( _path, 'rb') as f:
 
-			if( platform.system() is 'Linux' )
+			if( platform.system() is 'Linux' ):
 				_data = pickle.load(f)
 			elif( platform.system() is 'Windows' ):
 				_data = pickle.load(f, encoding='latin1')

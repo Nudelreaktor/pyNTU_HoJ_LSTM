@@ -208,7 +208,7 @@ def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _
 			training_labels.append(_obj.get_hoj_label()[0])
 
 		# train neural network
-		training_history = lstm_model.fit(np.array(training_data), np.array(training_labels), epochs=1, batch_size=batch_size, verbose=1) # epochen 1, weil außerhald abgehandelt
+		training_history = lstm_model.fit(np.array(training_data), np.array(training_labels), epochs=1, batch_size=batch_size, verbose=1) # epochen 1, weil ausserhald abgehandelt
 		histories.append(training_history.history)
 			
 	return lstm_model, histories

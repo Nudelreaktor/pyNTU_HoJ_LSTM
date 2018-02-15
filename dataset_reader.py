@@ -7,6 +7,7 @@ import argparse
 import math 
 import random
 import copy
+import platform
 
 import pickle
 import numpy as np
@@ -151,7 +152,14 @@ def load_pickles( _path, _object="data" ):
 
 	if _object is "data":
 		with open( _path, 'rb') as f:
-			_data = pickle.load(f, encoding='latin1')
+
+			if( platform.system() is 'Linux' ):
+				_data = pickle.load(f)
+			elif( platform.system() is 'Windows' ):
+				_data = pickle.load(f, encoding='latin1')
+			else:
+				_data = pickle.load(f)
+
 			_dir_counter = len(_data)
 			number_of_files = 0
 			for _obj in _data:

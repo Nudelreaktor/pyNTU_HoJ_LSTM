@@ -147,7 +147,7 @@ def lstm_init(save = False):
 	#
 	###############################################################
 
-	cnfMatrix_filename = "clf_statistics/" + statistics_base_filename + "cnfMatrix.conf_Matrix"
+	cnfMatrix_filename = "clf_statistics/" + statistics_base_filename + ".cnfMatrix"
 	# If file not exist, create.
 	if not os.path.exists(os.path.dirname(cnfMatrix_filename)):
 		os.makedirs(os.path.dirname(cnfMatrix_filename))
@@ -171,7 +171,6 @@ def lstm_init(save = False):
 
 	# bonus bonus create .png image with matplotlib 
 	cnfPNG_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.png"
-	print (" HELLO ", cnfPNG_filename)
 	if not os.path.exists(os.path.dirname(cnfPNG_filename)):
 		os.makedirs(os.path.dirname(cnfPNG_filename))
 	store_conf_matrix_as_png( cnf_matrix, cnfPNG_filename )

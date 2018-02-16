@@ -24,6 +24,8 @@ from keras.preprocessing import sequence
 
 # confusion matrix
 from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import Normalizer
 
 # file dialog
 # TODO Rebuild tKinter stuff with something else simple
@@ -39,88 +41,195 @@ timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # LSTM's main routine.
-def lstm_init(save = False):
+def lstm_init():
 
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Initial operations.
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	# Parse the command line options.
-	save, lstm_path, epochs, classes, hoj_height, training_path, training_list, layer_sizes, dataset_pickle_path, sample_strategy, number_of_subframes, batch_size, proportion, activation, recurrent_activation = parseOpts( sys.argv )
+	clpDict = parseOpts( sys.argv ) 
 
-	filename_base = timestamp + "_" + "lstm" + "_c" + str(classes) + "_e" + str(epochs) + "_" + "-".join(str(x) for x in layer_sizes)
-
-	print("creating neural network...")
-
-	start_time = time.time()
-
-	# create neural network
-	# 2 Layer LSTM
-	model = Sequential()
-
-	# LSTM Schichten hinzufuegen
-	if(len(layer_sizes) == 1):
-		model.add(LSTM(int(layer_sizes[0]), input_shape=(None,hoj_height)))
-	else:
-		for i in range(len(layer_sizes)):
-			if i == 0:
-				model.add(LSTM(int(layer_sizes[i]), input_shape=(None,hoj_height), return_sequences=True, activation=activation, recurrent_activation=recurrent_activation))
-			else:
-				if i == len(layer_sizes) - 1:
-					model.add(LSTM(int(layer_sizes[i]), activation=activation, recurrent_activation=recurrent_activation))
-				else:
-					model.add(LSTM(int(layer_sizes[i]), return_sequences=True, activation=activation, recurrent_activation=recurrent_activation))
-
-
-	# voll vernetzte Schicht zum Herunterbrechen vorheriger Ausgabedaten auf die Menge der Klassen 
-	model.add(Dense(classes))
-	
-	# Aktivierungsfunktion = Transferfunktion
-	# Softmax -> hoechsten Wert hervorheben und ausgaben normalisieren
-	model.add(Activation('softmax'))
-	
-	# lr = Learning rate
-	# zur "Abkuehlung" des Netzwerkes
-	optimizer = RMSprop(lr=0.001)
-	# categorical_crossentropy -> ein Ausgang 1 der Rest 0
-	model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-
-	model.summary()
-	
-	
-	# read dataset
-	if(os.path.isfile(dataset_pickle_path)):
-		dataset, dataset_size = dr.load_data(byte_object=True, data_object_path=dataset_pickle_path, classes=classes, number_of_entries=hoj_height)
-	else:
-		dataset, dataset_size = dr.load_data(byte_object=False, data_path=dataset_pickle_path, number_of_entries=hoj_height)
-
-	training_dataset, _ , validation_dataset, _ = dr.devide_dataset(_data=dataset, _number_of_directories=dataset_size, _training_list=training_list, _proportion=proportion)
-
-	model, histories = lstm_train(model, training_dataset, epochs=epochs, number_of_subframes=number_of_subframes, _sample_strategy=sample_strategy, batch_size=batch_size)
-	
-	
-	#	evaluation_path = training_path
-	score, acc, cnf_matrix = lstm_validate(model, validation_dataset, create_confusion_matrix=True,number_of_subframes=number_of_subframes, _sample_strategy=sample_strategy, batch_size=batch_size)
-
-	end_time = time.time()
-
-	timeDiff = datetime.timedelta(seconds=end_time - start_time)
-
-	# print statistics
-	
-	# Create base filename 
+	# Create base filename for output.
 	statistics_base_filename = ""
-	if lstm_path is not None:
-		statistics_base_filename = lstm_path
+	if clpDict['_output_name'] is not None:
+		statistics_base_filename = clpDict['_output_name']
 	else:
-		statistics_base_filename = filename_base
+		statistics_base_filename = str(timestamp + "_" + "lstm" + "_c" + str(clpDict['_lstm_classes']) + "_e" + str(clpDict['_lstm_epochs']) + "_" + "-".join(str(x) for x in clpDict['_hid_layer_size']))
 
-	# Check if clf_statistics is existing
+	# Check if clf_statistics folder is existing.
 	if not os.path.exists("clf_statistics/"):
 		os.makedirs("clf_statistics/")
 
-	clfStats_filename = "clf_statistics/" + statistics_base_filename + ".clfStats"
-	# If clf_statistics/ exist but there is no file 
-	if not os.path.exists(os.path.dirname(clfStats_filename)):
-		os.makedirs(os.path.dirname(clfStats_filename))
+	# Check if classifiers folder is existing.
+	if not os.path.exists("classifiers/"):
+		os.makedirs("classifiers/")
 
+	# Build the classifier and train it.
+	print("Init :: Creating neural network.")
+
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Build the model, train it and test it.
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	# Store the start time for statistics.
+	start_time = time.time()
+
+	# Create the neural network ( 2 Layer LSTM )
+	model = Sequential()
+
+	# Add LSTM layers to the model.
+	if(len(clpDict['_hid_layer_size']) == 1):
+		model.add(\
+			LSTM( int(clpDict['_hid_layer_size'][0]),\
+			input_shape=(None,clpDict['_in_layer_size'])\
+			))
+	else:
+		for i in range(len(clpDict['_hid_layer_size'])):
+			if i == 0:
+				model.add(\
+					LSTM( int(clpDict['_hid_layer_size'][i]),\
+					input_shape=(None, clpDict['_in_layer_size']),\
+					return_sequences=True,\
+					activation=clpDict['_activation'],\
+					recurrent_activation=clpDict['_recurrent_activation']\
+					))
+			else:
+				if i == len(clpDict['_hid_layer_size']) - 1:
+					model.add(\
+						LSTM(int(clpDict['_hid_layer_size'][i]),\
+						activation=clpDict['_activation'],\
+						recurrent_activation=clpDict['_recurrent_activation']\
+						))
+				else:
+					model.add(\
+						LSTM(int(clpDict['_hid_layer_size'][i]),\
+						return_sequences=True,\
+						activation=clpDict['_activation'],\
+						recurrent_activation=clpDict['_recurrent_activation']\
+						))
+
+
+	# Build fully connected layers for the dimension reduction of the high dimensional output data from the previuos layer.
+	model.add(Dense(clpDict['_lstm_classes']))
+	
+	# Use softmax activation function. ( https://en.wikipedia.org/wiki/Softmax_function )
+	model.add(Activation('softmax'))
+
+	# Define the learning rate.	( Controlled artificial cooling. )
+	optimizer = RMSprop(lr=0.001)
+
+	# Define the loss function. ( Categorical_crossentropy -> one output is 1 all the others are 0 )
+	model.compile(\
+		loss='categorical_crossentropy',\
+		optimizer=optimizer,\
+		metrics=['accuracy']\
+		)
+
+	model.summary()
+		
+	# Load  dataset.
+	if(os.path.isfile(clpDict['_data_object_path'])):
+		dataset, dataset_size = dr.load_data(
+									byte_object=True,\
+									data_object_path=clpDict['_data_object_path'],\
+									classes=clpDict['_lstm_classes'],\
+									number_of_entries=clpDict['_in_layer_size']\
+									)
+	else:
+		dataset, dataset_size = dr.load_data(\
+									byte_object=False,\
+									data_path=clpDict['_data_object_path'],\
+									number_of_entries=clpDict['_in_layer_size']\
+									)
+
+	# Devide the dataset in training an testing data.
+	training_dataset, _ , validation_dataset, _ = dr.devide_dataset(\
+													_data=dataset,\
+													_number_of_directories=dataset_size,\
+													_training_list=clpDict['_training_list'],\
+													_proportion=clpDict['_proportion'])
+
+	# Train the lstm network.
+	model, histories = lstm_train(\
+							model,\
+							training_dataset,\
+							epochs=clpDict['_lstm_epochs'],\
+							subsampling=clpDict['_subsampling'],\
+							number_of_subframes=clpDict['_number_of_subframes'],\
+							sample_strategy=clpDict['_sample_strategy'],\
+							batch_size=clpDict['_batch_size'])
+	
+	# Validate the lstm network.
+	score, acc, cnf_matrix = lstm_validate(\
+							model,\
+							validation_dataset,\
+							create_confusion_matrix=True,\
+							number_of_subframes=clpDict['_number_of_subframes'],\
+							sample_strategy=clpDict['_sample_strategy'],\
+							batch_size=clpDict['_batch_size'])
+
+	# Store the end time for statistics.
+	end_time = time.time()
+
+	# Compute computational time.
+	timeDiff = datetime.timedelta(seconds=end_time - start_time)
+
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Print and write statistics
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	# Build the filename for the stats file.
+	clfStats_filename = "clf_statistics/" + statistics_base_filename + ".clfStats"
+	check_Path(clfStats_filename)
+	write_stats_file(\
+		clfStats_filename,\
+		timeDiff, histories,\
+		acc,\
+		score)
+
+	# Build the filename for the confusion matrix file.
+	cnfMatrix_filename = "clf_statistics/" + statistics_base_filename + ".cnfMatrix"
+	# If the file doesn't exist, create it and store the matrix file.
+	check_Path(cnfMatrix_filename)
+	file = open(cnfMatrix_filename, "wt")
+	writer = csv.writer(file)
+	writer.writerows(cnf_matrix)
+
+	# Build the filename for the confusion matrix file.
+	cnfBMP_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.bmp"
+	# Create a bitmap image of confusion matrix.
+	img = create_bitmap( cnf_matrix )
+	check_Path(cnfBMP_filename)
+	img.save(cnfBMP_filename)
+
+	# bonus bonus create .png image with matplotlib 
+	cnfPNG_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.png"
+	check_Path(cnfPNG_filename)
+	store_conf_matrix_as_png(\
+		cnf_matrix,\
+		cnfPNG_filename)
+	
+	# save neural network
+	if( clpDict['_save_net'] is True ):
+		# If a output name was defined.
+		if clpDict['_output_name'] is not None:
+			filename = "classifiers/"+clpDict['_output_name']+".h5"
+			check_Path(filename)
+			model.save(filename)
+		# else use the standard format.
+		else:
+			filename = "classifiers/" + filename_base + ".h5"
+			check_Path(filename)
+			model.save(filename)
+	return model
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Create a bitmap from the confussion matrix.
+
+def write_stats_file( clfStats_filename, timeDiff, histories, acc, score ):
+
+	# Open the stats file.
 	f = open(clfStats_filename, "wt")	
 	f.write("Network was created and trained in : "+str(timeDiff)+" s\n" )
 	f.write("------------------------------------------------------------------\n")
@@ -137,29 +246,10 @@ def lstm_init(save = False):
 	f.close()
 	print("network creation succesful! \\(^o^)/")
 
-	# save confusion matrix 
-	###############################################################
-	#
-	# confusion matrix:
-	# vertical true label
-	# horrizontal predicted label
-	#
-	###############################################################
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Create a bitmap from the confussion matrix.
 
-	# TODO TESTING Dirty Workaround for 60 vs 61 class problem
-	# Remove nan line in cnf_matrix
-	cnf_matrix[~np.isnan(cnf_matrix).any(axis=1)]
-	# TODO TESTING 
-
-	cnfMatrix_filename = "clf_statistics/" + statistics_base_filename + ".cnfMatrix"
-	# If file not exist, create.
-	if not os.path.exists(os.path.dirname(cnfMatrix_filename)):
-		os.makedirs(os.path.dirname(cnfMatrix_filename))
-	file = open(cnfMatrix_filename, "wt")
-	writer = csv.writer(file)
-	writer.writerows(cnf_matrix)
-
-	# bonus create Bitmap image of confusion matrix
+def create_bitmap( cnf_matrix ):
 	img = Image.new('RGB',(len(cnf_matrix) * 10,len(cnf_matrix) * 10),"black")
 	pixels = img.load()
 
@@ -170,33 +260,14 @@ def lstm_init(save = False):
 			else:
 				pixels[i,j] = (int(cnf_matrix[int(j/10),int(i/10)] * 255),0,0)
 
-	cnfBMP_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.bmp"
-	img.save(cnfBMP_filename)
+	return img
 
-	# bonus bonus create .png image with matplotlib 
-	cnfPNG_filename = "clf_statistics/" + statistics_base_filename + "_cnfMatrix.png"
-	if not os.path.exists(os.path.dirname(cnfPNG_filename)):
-		os.makedirs(os.path.dirname(cnfPNG_filename))
-	store_conf_matrix_as_png( cnf_matrix, cnfPNG_filename )
-	
-	# save neural network
-	if save is True:
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Check if path exist
 
-		if not os.path.exists("classifiers/"):
-			os.makedirs("classifiers/")
-
-		if lstm_path is not None:
-			filename = "classifiers/"+lstm_path+".h5"
-			if not os.path.exists(os.path.dirname(filename)):
-				os.makedirs(os.path.dirname(filename))
-			model.save(filename)
-		else:
-			filename = "classifiers/" + filename_base + ".h5"
-			if not os.path.exists(os.path.dirname(filename)):
-				os.makedirs(os.path.dirname(filename))
-			model.save(filename)
-
-	return model
+def check_Path( _path ):
+	if not os.path.exists(os.path.dirname( _path )):
+		os.makedirs(os.path.dirname( _path ))
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Store the confusion matrix as .png
@@ -207,7 +278,7 @@ def store_conf_matrix_as_png( cnf_matrix, _classifier_name ):
 
 	print("SCMP :: CLF_Name_ ", _classifier_name )
 	cm_labels = np.arange(len(cnf_matrix[0]))
-	p_CM.plot_confusion_matrix( cnf_matrix, cm_labels, _classifier_name , True, show=False )
+	p_CM.plot_confusion_matrix( cnf_matrix, cm_labels, _classifier_name , normalize=False, show=False )
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Load a previously trained neural network.
@@ -226,13 +297,13 @@ def lstm_load(filename = None):
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Train the neural network.
 
-def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _sample_strategy="random", batch_size=32):
+def lstm_train(lstm_model, training_dataset, epochs=10, subsampling=False, number_of_subframes=8, sample_strategy="random", batch_size=32):
 	
 	print("train neural network...")
 	histories = []
-	
+
 	# Trainingsepochen
-	for x in range(0,epochs):
+	for x in range(0, epochs):
 		print("Epoch", x+1, "/", epochs)
 		# lade und tainiere jeden HoJ-Ordner im Trainingsverzeichnis
 		training_data = []
@@ -240,11 +311,14 @@ def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _
 		idx = 0
 
 		for _obj in training_dataset:
-			if number_of_subframes > 0:
-				training_data.append(get_buckets(_obj.get_hoj_set(), number_of_subframes, _sample_strategy))
+			if subsampling is True:
+				training_data.append(get_buckets(_obj.get_hoj_set(), number_of_subframes, sample_strategy))
 			else:
 				training_data.append(_obj.get_hoj_set())
-			training_labels.append(_obj.get_hoj_label()[0])
+			training_labels.append(_obj.get_hoj_label()[0]) 
+
+		print(len(training_data[0]))
+		print(len(training_labels[0]))
 
 		# train neural network
 		training_history = lstm_model.fit(np.array(training_data), np.array(training_labels), epochs=1, batch_size=batch_size, verbose=1) # epochen 1, weil ausserhald abgehandelt
@@ -255,7 +329,7 @@ def lstm_train(lstm_model, training_dataset, epochs=10, number_of_subframes=8, _
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Validate the neural network
 
-def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False, number_of_subframes=0, _sample_strategy="random", batch_size=32):
+def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False, number_of_subframes=0, sample_strategy="random", batch_size=32):
 	
 	print("evaluate neural network...")
 	validation_data = []
@@ -268,7 +342,7 @@ def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False,
 	
 	for _obj in evaluation_dataset:
 		if number_of_subframes > 0:
-			validation_data.append(get_buckets(_obj.get_hoj_set(), number_of_subframes, _sample_strategy))
+			validation_data.append(get_buckets(_obj.get_hoj_set(), number_of_subframes, sample_strategy))
 		else:
 			validation_data.append(_obj.get_hoj_set())
 		validation_labels.append(_obj.get_hoj_label()[0])
@@ -296,7 +370,9 @@ def lstm_validate(lstm_model, evaluation_dataset, create_confusion_matrix=False,
 
 		cnf_matrix = confusion_matrix(real_labels, predicted_labels)
 
-		cnf_matrix = cnf_matrix.astype('float') / (cnf_matrix.sum(axis=1) if cnf_matrix.sum(axis=1) is not 0 else 1) [:, np.newaxis]
+		norm = Normalizer()
+		cnf_matrix = norm.fit_transform(cnf_matrix)
+
 		return score, acc, cnf_matrix
 
 
@@ -311,34 +387,34 @@ def lstm_predict(lstm_model, hoj3d_set):
 	return idx,prediction[0][0][idx],prediction
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
-# Skip actions during training which are not in the training_list
+# Skip actions during training which are not in the clpDict['_training_list']
 
-def to_train( training_list, _skeleton_filename_ ):
-	# If an training_list is given 
-	if( training_list is not None ):
-		for key in training_list:
+def to_train( _training_list, _skeleton_filename_ ):
+	# If an clpDict['_training_list'] is given 
+	if( _training_list is not None ):
+		for key in _training_list:
 			if( key in _skeleton_filename_ ):
-				# If the action of the skeleton file is in the training_list.
+				# If the action of the skeleton file is in the clpDict['_training_list'].
 				return True
-	# If no training_list is given
+	# If no clpDict['_training_list'] is given
 	else:
 		return True
 
-	# If the action of the skeleton file is not in the training_list.
+	# If the action of the skeleton file is not in the clpDict['_training_list'].
 	return False
 	
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
-# Skip actions during evaluation which are in the training_list
+# Skip actions during evaluation which are in the clpDict['_training_list']
 
-def to_evaluate( training_list, _skeleton_filename_ ):
-	# If an training_list is given 
-	if( training_list is not None ):
-		for key in training_list:
+def to_evaluate( _training_list, _skeleton_filename_ ):
+	# If an clpDict['_training_list'] is given 
+	if( c_training_list is not None ):
+		for key in _training_list:
 			if( key in _skeleton_filename_ ):
-				# If the action of the skeleton file is in the training_list.
+				# If the action of the skeleton file is in the clpDict['_training_list'].
 				return False
 
-	# If the action of the skeleton file is not in the training_list.
+	# If the action of the skeleton file is not in the clpDict['_training_list'].
 	return True
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -389,115 +465,179 @@ def get_buckets( hoj_set, _number_of_subframes, _sample_strategy="random" ):
 
 def parseOpts( argv ):
 
-	# generate parser object
-	parser = argparse.ArgumentParser()
-	# add arguments to the parser so he can parse the shit out of the command line
+	# Storage parameters
+	_data_object_path = None
+	_output_name = "empty"
 
-	# dataset parameters
-	parser.add_argument("-dop", "--data_object_path", action='store', dest="data_object_path", help="The path to the data_object. (required or -tp)")
-	parser.add_argument("-tp", "--training_path", action='store', dest="training_path", help="The path of the training directory. (required or -dp)")
-	parser.add_argument("-tl", "--training_list", action='store', dest='training_list', help="A list of training feature in the form: -tl S001,S002,S003,... (overrites -pp)")
-	parser.add_argument("-pp", "--proportion", action='store', dest='proportion', help="The Proportion of the Datasets training data to validation data in the form -p 80/20")
+	# Dataset control parameters 
+	_training_list = None
+	_subsampling = False
+	_sample_strategy = "first"
+	_number_of_subframes = 8
+	_proportion = None
 
-	# classifier parameters
-	parser.add_argument("-s", "--input_size", action='store', dest="lstm_size", help="The number of input fields. (required)")
-	parser.add_argument("-c", "--classes", action='store', dest="lstm_classes", help="The number of output classes. (required)")
-	parser.add_argument("-e", "--epochs", action='store', dest="lstm_epochs", help="The number of training epochs. (required)")
-	parser.add_argument("-ls", "--layer_sizes", action='store', dest='layer_sizes', help="A list of sizes of the LSTM layers (standart: -ls 16,16)")
-	parser.add_argument("-sf", "--number_of_subframes", action='store', dest="number_of_subframes", help="The number of subframes in one bucket. No subsampling when <= 0")
-	parser.add_argument("-bs", "--bucket_strategy", action='store', dest='bucket_strategy', help="Defines the strategy of the set subsampling. [first | mid | last | random]")
-	parser.add_argument("-b", "--batch_size", action='store', dest='batch_size', help="The batch size to train the LSTM with.")
-	parser.add_argument("-a", "--activation", action='store', dest='activation', help="The Activation function of the LSTM neurons. (default tanh)")
-	parser.add_argument("-ra", "--recurrent_activation", action='store', dest='recurrent_activation', help="the recurrent update function of the internal memory state. (default tanh)")
+	# Classifier control parameters
+	_activation = 'tanh'
+	_recurrent_activation = 'tanh'
+	_hid_layer_size = [16,16]
+	_batch_size = 1
+	_in_layer_size = 2
+	_lstm_classes = 61
+	_lstm_epochs = 10
 
 	# general control parameters
-	parser.add_argument("-p", "--path", action='store', dest="lstm_path", help="The PATH with filename where the lstm-model and statistics will be saved.")
-	parser.add_argument("-t", "--test", action='store_true', dest='test_network', help="if set the created neural network won't be saved. (overrites -p)")
+	_save_net = False
+	_verbose = False
 
-	
+	# Dictionary
+	clpDict={\
+		'_data_object_path':_data_object_path,\
+		'_output_name':_output_name,\
+		'_training_list':_training_list,\
+		'_subsampling':_subsampling,\
+		'_sample_strategy':_sample_strategy,\
+		'_number_of_subframes':_number_of_subframes,\
+		'_proportion':_proportion,\
+		'_activation':_activation,\
+		'_recurrent_activation':_recurrent_activation,\
+		'_hid_layer_size':_hid_layer_size,\
+		'_batch_size':_batch_size,\
+		'_in_layer_size':_in_layer_size,\
+		'_lstm_classes':_lstm_classes,\
+		'_lstm_epochs':_lstm_epochs,\
+		'_save_net':_save_net,\
+		'_verbose':_verbose,\
+	}
+
+	# generate parser object
+	parser = argparse.ArgumentParser()
+
+	# Storage parameters
+	parser.add_argument("-dop", "--data_object_path", action='store', dest="data_object_path", help="The path to the data_object. (required or -tp)")
+	parser.add_argument("-oN", "--output_name", action='store', dest='output_name', help="The name which we will be used for the statistic and the classifier.") 
+
+	# Dataset control parameters 
+	parser.add_argument("-tl", "--training_list", action='store', dest='training_list', help="A list of training feature in the form: -tl S001,S002,S003,... (overrites -pp)")
+	parser.add_argument("-sub","--subsampling", action='store_true', dest="subsampling", help="Will you subsample the dataset?")
+	parser.add_argument("-ss", "--sample_strategy", action='store', dest='sample_strategy', help="Defines the strategy of the set subsampling. [ first ( default ) | mid | last | random]")
+	parser.add_argument("-sf", "--number_of_subframes", action='store', dest="number_of_subframes", help="The number of frames per set in the training.")
+	parser.add_argument("-pp", "--proportion", action='store', dest='proportion', help="The Proportion of the Datasets training data to validation data in the form -p 80/20")
+
+	# Classifier control parameters
+	parser.add_argument("-a", "--activation", action='store', dest='activation', help="The Activation function of the LSTM neurons. (default tanh)")
+	parser.add_argument("-ra","--recurrent_activation", action='store', dest='recurrent_activation', help="the recurrent update function of the internal memory state. (default tanh)")
+	parser.add_argument("-ls","--hidden_layer_size", action='store', dest='hid_layer_size', help="A list of sizes of the LSTM layers (standart: -ls 16,16)")
+	parser.add_argument("-b", "--batch_size", action='store', dest='batch_size', help="The batch size to train the LSTM with.")
+	parser.add_argument("-s", "--input_size", action='store', dest="in_layer_size", help="The number of input fields. (required)")
+	parser.add_argument("-c", "--classes", action='store', dest="lstm_classes", help="The number of output classes. (required)")
+	parser.add_argument("-e", "--epochs", action='store', dest="lstm_epochs", help="The number of training epochs. (required)")
+
+	# general control parameters
+ 	parser.add_argument("-sn", "--save_network", action='store_true', dest='save_network', help="If set the created neural network will be saved.")
+ 	parser.add_argument("-v", "--verbose", action='store', dest='verbose', help="Get the chit chat.")
 
 	# finally parse the command line 
 	args = parser.parse_args()
 
-	if args.lstm_path:
-		lstm_path = args.lstm_path
-	else:
-		lstm_path = None
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Storage parameters
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	if args.lstm_epochs:
-		lstm_epochs = int(args.lstm_epochs)
-	else:
-		lstm_epochs = 10
-
-	if args.lstm_classes:
-		lstm_classes = int(args.lstm_classes)
-	else:
-		lstm_classes = 1
-
-	if args.lstm_size:
-		lstm_size = int(args.lstm_size)
-	else:
-		lstm_size = 2
-	
-	if args.training_path:
-		training_path = args.training_path
-	else:
-		training_path = None
-		
-	if args.training_list:
-		training_list = args.training_list.split(",")
-	else:
-		training_list = None
-		
-	if args.proportion and training_list is None:
-		proportion = args.proportion
-	else:
-		proportion = None
-
-	if args.layer_sizes:
-		layer_sizes = args.layer_sizes.split(",")
-	else:
-		layer_sizes = [16,16]
-
+	# The path to the data_object.
 	if args.data_object_path:
-		data_object_path = args.data_object_path
-	else:
-		data_object_path = ""
-		
+		clpDict['_data_object_path'] = args.data_object_path
+
+	# The name which we will be used for the statistic and the classifier.
+	if args.output_name:
+		clpDict['_output_name'] = args.output_name
+
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Dataset control parameters
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	# A list of data objects for the training
+	if args.training_list:
+		clpDict['_training_list'] = args.training_list.split(",")
+
+	# The number of subframes u will use from each subset.
+	if args.subsampling:
+		clpDict['_subsampling'] = args.subsampling
+
+	# The number of subframes u will use from each subset.
 	if args.number_of_subframes:
-		number_of_subframes = int(args.number_of_subframes)
-	else:
-		number_of_subframes = 0
-	
-	if args.batch_size:
-		batch_size = int(args.batch_size)
-	else:
-		batch_size = 1
-		
+		clpDict['_number_of_subframes'] = int(args.number_of_subframes)
+
+	# Which strategy will u use for the set subsampling?
+	if args.sample_strategy: 
+		clpDict['_sample_strategy'] = args.sample_strategy
+
+	# Will u use a proportion for splitting the data in training and testing?
+	if args.proportion:
+		clpDict['_proportion'] = args.proportion
+
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Classifier control parameters
+	# ---------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+	# Specify the activation function for the lstm cells.
 	if args.activation:
-		activation = args.activation
-	else:
-		activation = 'tanh'
-		
+		clpDict['_activation'] = args.activation
+
+	# Specify the recurrent activation function for the lstm cells. ( Backprop path )
 	if args.recurrent_activation:
-		recurrent_activation = args.recurrent_activation
-	else:
-		recurrent_activation = 'tanh'
+		clpDict['_recurrent_activation'] = args.recurrent_activation
 
-	print ("\nConfiguration:")
+	# Define the layer size for the lstm layers.
+	if args.hid_layer_size:
+		clpDict['_hid_layer_size'] = args.hid_layer_size.split(",")
+
+	# Define the batch size for the trianing. ( Online (0) vs. batch learning (n, n > 0). )
+	if args.batch_size:
+		clpDict['_batch_size'] = int(args.batch_size)
+
+	# The size of the hidden layer.
+	if args.in_layer_size:
+		clpDict['_in_layer_size'] = int(args.in_layer_size)
+
+	# The number of training clpDict['_lstm_epochs'].
+	if args.lstm_epochs:
+		clpDict['_lstm_epochs'] = int(args.lstm_epochs)
+
+	# The number of clpDict['_lstm_classes'] in the computation.
+	if args.lstm_classes:
+		clpDict['_lstm_classes'] = int(args.lstm_classes)
+
+	# Will you save the network after training
+	if args.save_network is True:
+		clpDict['_save_net'] = True
+
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Global control parameters
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------        
+
+	if args.verbose:
+		clpDict['_verbose'] = int(args.verbose)
+
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Commandline Parameter Output
+	# ----------------------------------------------------------------------------------------------------------------------------------------------------------  
+
+	print ("\nControl Configuration:")
 	print ("-----------------------------------------------------------------")
-	print ("Input size         : ", lstm_size)
-	print ("Output classes     : ", lstm_classes)
-	print ("Training Epochs    : ", lstm_epochs)
-	print ("Lstm destination   : ", lstm_path)
-	if args.test_network is True:
-		print("Network won't be saved!")
+	print ("Input size         : ", clpDict['_in_layer_size'])
+	print ("Output size        : ", clpDict['_lstm_classes'])
+	print ("Training epochs    : ", clpDict['_lstm_epochs'])
+	print ("Lstm destination   : ", clpDict['_output_name'])
+	if args.save_network is True:
+		print("Network will be saved")		
 	else:
-		print("Network will be saved")
+		print("Network won't be saved!")
+	if clpDict['_verbose'] > 0:
+		print ("Verbosity level           : ", clpDict['_verbose']  )
 
-	return (not args.test_network), lstm_path, lstm_epochs, lstm_classes, lstm_size, training_path, training_list, layer_sizes, data_object_path, args.bucket_strategy, number_of_subframes, batch_size, proportion, activation, recurrent_activation
+	return clpDict
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-	lstm_init(True)
+	lstm_init()

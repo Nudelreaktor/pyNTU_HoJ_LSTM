@@ -1,29 +1,29 @@
 #!/bin/bash
 # This script starts the cross-view, cross-camera and standard proportion tests for the 7 classes lstm tests.
 
-python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_global_7_classes.bin_data' -e 1 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_3D_global'
-python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_local_7_classes.bin_data' -e 1 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_3D_local'
-python lstm.py -s 84 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj'
-python lstm.py -s 88 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_parts_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_parts'
-python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_cylinder'
-python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_parts_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_cylinder_parts'
-python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_sphere'
-python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_parts_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_sphere_parts'
+python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_global_7_classes.bin_data' -e 1 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_3D_global' -sn
+python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_local_7_classes.bin_data' -e 1 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_3D_local' -sn
+python lstm.py -s 84 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj' -sn
+python lstm.py -s 88 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_parts_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_parts' -sn
+python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_cylinder' -sn
+python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_parts_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_cylinder_parts' -sn
+python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_sphere' -sn
+python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_parts_7_classes.bin_data' -e 50 -tl 'P001,P002,P004,P005,P008,P009,P013,P014,P015,P016,P017,P018,P019,P025,P027,P028,P031,P034,P035,P038' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cs_hoj_sphere_parts' -sn
 
-python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_global_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_3D_global'
-python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_local_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_3D_local'
-python lstm.py -s 84 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj'
-python lstm.py -s 88 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_parts_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_parts'
-python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_cylinder'
-python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_parts_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_cylinder_parts'
-python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_sphere'
-python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_parts_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_sphere_parts'
+python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_global_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_3D_global' -sn
+python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_local_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_3D_local' -sn
+python lstm.py -s 84 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj' -sn
+python lstm.py -s 88 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_parts_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_parts' -sn
+python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_cylinder' -sn
+python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_parts_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_cylinder_parts' -sn
+python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_sphere' -sn
+python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_parts_7_classes.bin_data' -e 50 -tl 'C002,C003' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/cc_hoj_sphere_parts' -sn
 
-python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_global_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_3D_global'
-python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_local_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_3D_local'
-python lstm.py -s 84 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj'
-python lstm.py -s 88 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_parts_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_parts'
-python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_cylinder'
-python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_parts_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_cylinder_parts'
-python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_sphere'
-python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_parts_7_classes.bin_data' -e 50 -oNp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_sphere_parts'
+python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_global_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_3D_global' -sn
+python lstm.py -s 27 -ls 100,100 -dop 'pickles/7_classes_sets/3d_points_local_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_3D_local' -sn
+python lstm.py -s 84 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj' -sn
+python lstm.py -s 88 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_parts_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_parts' -sn
+python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_cylinder' -sn
+python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_cylinder_parts_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_cylinder_parts' -sn
+python lstm.py -s 168 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_sphere' -sn
+python lstm.py -s 172 -ls 100,100 -dop 'pickles/7_classes_sets/hoj_sphere_parts_7_classes.bin_data' -e 50 -pp '80/20' -b 32 -a 'relu' -ra 'hard_sigmoid' -oN '7_classes/pp_hoj_sphere_parts' -sn
